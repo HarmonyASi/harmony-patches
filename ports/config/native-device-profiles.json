@@ -83,6 +83,17 @@
     "root_uuid": null,
     "module_seed": null,
     "pre_root_modules": null,
-    "pre_root_display_modules": null
+    "pre_root_display_modules": null,
+    "kernel_compile_evidence": {
+      "status": "compile-only-not-boot-tested",
+      "source_repository": "aurora-silicon/linux",
+      "source_commit": "d13466ebb8b5f2e2af3d2c8359f4c96e711a5679",
+      "configuration": "ports/kernel/test7.config",
+      "build_suffix": "-aurora-hmos-j293-test1",
+      "observed_kernel_release": "7.2.11-aurora-hmos-j293-test1+",
+      "toolchain": "LLVM 19",
+      "linker": "GNU ld",
+      "device_tree": "t8103-j293.dts"
+    }
   }
 }

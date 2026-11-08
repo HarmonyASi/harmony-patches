@@ -35,6 +35,17 @@ class NativeDeviceProfilesTest(unittest.TestCase):
         self.assertEqual(profile['soc'], 'T8103')
         self.assertEqual(profile['device_tree_compatibles'], ['apple,j293', 'apple,t8103'])
         self.assertEqual(profile['status'], 'candidate-unqualified')
+        self.assertEqual(
+            profile['kernel_compile_evidence']['status'],
+            'compile-only-not-boot-tested',
+        )
+        self.assertEqual(
+            profile['kernel_compile_evidence']['source_commit'],
+            'd13466ebb8b5f2e2af3d2c8359f4c96e711a5679',
+        )
+        self.assertIsNone(profile['kernel_release'])
+        self.assertIsNone(profile['root_uuid'])
+        self.assertIsNone(profile['module_seed'])
         with self.assertRaisesRegex(
             ValueError,
             'kernel_release, root_uuid, module_seed, pre_root_modules, pre_root_display_modules',

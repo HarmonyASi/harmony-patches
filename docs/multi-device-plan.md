@@ -13,8 +13,9 @@ The supplied device tree identifies this machine as `apple,j293` and `apple,t810
 | Area | Evidence and current status |
 | --- | --- |
 | Identity | Identified by the supplied DTS as MacBook Pro (13-inch, M1, 2020), J293 / T8103. |
-| Device tree | J293-specific DTS is available for comparison. It has not been integrated into or validated with the HarmonyMac boot chain. |
-| Kernel and modules | Not qualified. The repository's native baseline is Linux 7.2.11 with the J514S-specific `-aurora-hmos-j514s-test7` release. |
+| Device tree | The pinned Aurora source tree contains `t8103-j293.dts`; J293 DTB compilation succeeded. The resulting DTB has not been tested in the HarmonyMac boot chain. |
+| Kernel | Compile-only evidence: the pinned Aurora source built with the test7 config plus the five HarmonyMac kernel patches and `accesstokenid` source. The build was not boot-tested. |
+| Modules | `modules_install` copied 1,005 modules (about 1.1 GB); `depmod` was unavailable, so module metadata is incomplete. This is an unfiltered install, not a qualified initramfs module set. |
 | Storage and boot path | Not tested with HarmonyMac on J293. |
 | Display and Touch Bar | DTS describes the J293 panel/DCP and Touch Bar; neither has been tested with HarmonyMac. |
 | Input | DTS describes SPI HID input; it has not been tested with HarmonyMac. |
@@ -22,7 +23,16 @@ The supplied device tree identifies this machine as `apple,j293` and `apple,t810
 | Wi-Fi and Bluetooth | DTS identifies the `apple,honshu` board type. Matching HarmonyMac drivers and firmware have not been qualified. |
 | HarmonyOS startup and services | Not tested on J293. |
 
-The native initramfs builder now has explicit `j514s` and `j293` profiles. J514S retains its existing test7 kernel release, root UUID, module seed, and ordered early-module lists. J293 is recorded as an unqualified candidate using only the supplied model and device-tree identities; its profile intentionally lacks a kernel release, root UUID, module seed, and ordered early-module lists, so selecting it fails before creating build output. This is code scaffolding, not J293 boot support. The rootfs population script's default UUID remains J514S-only; any future target must pass its verified expected UUID explicitly.
+The native initramfs builder now has explicit `j514s` and `j293` profiles. J514S retains its existing test7 kernel release, root UUID, module seed, and ordered early-module lists. J293 remains an unqualified candidate: its profile records compile-only evidence but intentionally lacks an adopted kernel release, root UUID, module seed, and ordered early-module lists, so selecting it fails before creating build output. This is code scaffolding, not J293 boot support. The rootfs population script's default UUID remains J514S-only; any future target must pass its verified expected UUID explicitly.
+
+### J293 kernel compile evidence
+
+- Source: `aurora-silicon/linux` commit `d13466ebb8b5f2e2af3d2c8359f4c96e711a5679`; that tree already contains `t8103-j293.dts`.
+- Build inputs: historical `test7.config`, all five HarmonyMac kernel patches, and the HarmonyMac `accesstokenid` source.
+- Build settings: `build-test-kernel.sh` suffix `-aurora-hmos-j293-test1`, LLVM 19, and GNU ld. LLD hit the build script's VDSO offset parser; GNU ld produced a successful build.
+- Output evidence: kernel image about 26 MB and J293 DTB about 77 KB. The working tree was dirty, so the observed release was `7.2.11-aurora-hmos-j293-test1+`; this `+` release is not adopted as the profile's kernel release.
+- Scope: compilation only; no boot, initramfs, root-device discovery, or J293 hardware validation. No J293 root UUID or persistence strategy has been selected. No binary artifacts or build config are checked into this repository.
+- Module handoff: `modules_install` copied 1,005 modules (about 1.1 GB), but `depmod` was absent and generated module metadata is incomplete. This is not a curated or usable J293 initramfs module set.
 
 An installed Fedora Asahi reference provides a J293 DTB and modules for Linux `6.19.13-400.asahi.fc44.aarch64+16k`; its config enables Apple-specific support including DART, SART, AOP, PMP, Apple DRM, NVMe, SPI, and HID. This is useful only as evidence that a separate Linux build has J293-specific configuration. Its kernel, DTB, modules, and firmware must not be mixed with HarmonyMac's pinned 7.2.11 baseline. Fedora files labeled `harmony` are excluded from this comparison.
 
@@ -43,6 +53,7 @@ The initial identity and DTS evidence are available. The next missing inputs are
 
 - macOS and boot-firmware versions, plus the intended HarmonyOS image/build.
 - The kernel source commit, config, release string, modules, and firmware intended for the HarmonyMac J293 build.
+- Which root-storage layout is intended for J293, and whether the HarmonyOS root must retain writable state across reboot; confirm the target filesystem and persistence behavior before assigning or recording any root UUID.
 - A sanitized boot log from a known-good operating system and any Aurora attempt.
 - Observed boot path, root-disk connection, display, keyboard/trackpad, and peripheral behavior on this machine.
 - Any device configuration required by the HarmonyOS image that differs from J514S.

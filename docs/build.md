@@ -50,7 +50,7 @@ In a separate build tree for the pinned Aurora source, inspect and apply the `ke
 
 The historical [test7.config](../ports/kernel/test7.config) is included as a configuration reference for the same baseline. The patch application/driver integration script and module installation handoff are not yet complete. `kernel/ashmem/` is a separate module and must be built for the same kernel.
 
-`build-native-initramfs.py --help` lists the required matching modules, static bootstrap, firmware, UUID utility, and output directory. Its default `--device-profile j514s` preserves the historical test7 release, root UUID, and ordered early-module lists. The `j293` profile records the supplied model identity as an unqualified candidate, but intentionally has no kernel release, root UUID, or module lists; selecting it fails before output creation. This scaffolding does not qualify J293 boot support. The builder rejects missing modules or mismatched vermagic for a complete profile.
+`build-native-initramfs.py --help` lists the required matching modules, static bootstrap, firmware, UUID utility, and output directory. Its default `--device-profile j514s` preserves the historical test7 release, root UUID, and ordered early-module lists. The `j293` profile records the supplied model identity and a compile-only kernel evidence record, but intentionally has no adopted kernel release, root UUID, or module lists; selecting it fails before output creation. J293 has not been boot-tested, and its module install lacks generated `depmod` metadata. This scaffolding does not qualify J293 boot support. The builder rejects missing modules or mismatched vermagic for a complete profile.
 
 ## Component validation
 
