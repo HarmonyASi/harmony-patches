@@ -1,20 +1,14 @@
-# Aurora 的鸿蒙内核接口
+# HarmonyOS kernel interfaces for Aurora
 
-`accesstokenid/` 基于 OpenHarmony `kernel_linux_5.10` 的
-`OpenHarmony-6.0-Release` 固定提交
-`4e38b39c0ca8cc8768061c5ba645c1b748c66d95`：
+`accesstokenid/` is based on the following pinned OpenHarmony `kernel_linux_5.10` `OpenHarmony-6.0-Release` commit:
+
+`4e38b39c0ca8cc8768061c5ba645c1b748c66d95`
 
 - `drivers/accesstokenid/access_tokenid.c`
 - `drivers/accesstokenid/access_tokenid.h`
 
-保留原 GPL-2.0 许可与版权说明。当前移植显式包含现代内核的 cred/uaccess
-头文件，并在本驱动定义原平台的 nwebspawn UID（3081）。
+The original GPL-2.0 license and copyright notices are retained. The port explicitly includes modern kernel cred/uaccess headers and defines the platform's nwebspawn UID (3081) in this driver.
 
-`ohos-access-token.patch` 以本项目固定 Aurora 源码为基线，将官方 token/ftoken
-字段与 Binder 调用身份传递接入内核，包含 feature、access-token 和 sender-info
-ioctl。与旧 L410 探针垫片不同，这里直接修改源码，不依赖内部函数地址和
-kretprobe。是否满足完整鸿蒙安全策略仍需单独验收。
+`ohos-access-token.patch` applies the official token/ftoken fields and Binder caller-identity propagation to the project's pinned Aurora source. It includes feature, access-token, and sender-info ioctls. Unlike the older L410 probe shim, this directly modifies source and does not depend on internal function addresses or kretprobe. Compliance with the complete HarmonyOS security policy still requires separate acceptance.
 
-先对固定源码检查补丁，再复制驱动目录到 `drivers/accesstokenid/`，启用
-`CONFIG_ACCESS_TOKENID=y`。这些步骤只应用到独立测试内核构建树。
-原生启动的内核和 modules 必须使用同一构建版本，不加载旧麒麟模块。
+First check the patch against the pinned source, then copy the driver directory to `drivers/accesstokenid/` and enable `CONFIG_ACCESS_TOKENID=y`. Apply these steps only to a separate test-kernel build tree. The kernel and modules used for native boot must come from the same build; do not load old Kirin modules.

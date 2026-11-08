@@ -1,21 +1,21 @@
-# Aurora + HarmonyOS 本地开发预览
+# Aurora + HarmonyOS local development preview
 
-这是 macOS/HVF 与 UTM 构建验证产物。完整桌面、基础应用、厂商硬件激活和 Apple 真机行为尚未完成验收；以 manifest.json 的 qualification 和对应证据为准。
+This is a macOS/HVF and UTM build-validation artifact. The complete desktop, basic applications, vendor hardware activation, and behavior on native Apple hardware have not completed acceptance; use the package's `manifest.json` qualification and corresponding evidence as the authority.
 
-需要 macOS Apple Silicon、Python 3、QEMU（包含 qemu-img、qemu-system-aarch64）和 lsof。默认使用 4 GiB 内存、4 vCPU、1920×1200 virtio 显示、虚拟键鼠及 QEMU 用户态以太网。
+Requirements: Apple Silicon macOS, Python 3, QEMU (including `qemu-img` and `qemu-system-aarch64`), and lsof. Defaults are 4 GiB RAM, 4 vCPUs, 1920×1200 virtio display, virtual keyboard/mouse, and QEMU user-mode networking.
 
-1. 校验：`shasum -a 256 -c SHA256SUMS`。
-2. 查看启动命令：`python3 start.py --dry-run`。
-3. 启动：`python3 start.py`。它创建 runtime/system.qcow2 持久可写层，保留独立 rootfs.qcow2 基础镜像。
-4. 等待对应 runs 目录的 serial.log 出现 LOCAL_ROOT_INTERACTIVE_READY，再通过 `python3 tools/guest-console.py RUN '命令'` 使用临时诊断端口。屏幕可用 `python3 tools/guest-pointer.py RUN --capture frame.ppm` 抓取。当前 Tablet 绝对指针未经校准，使用原装 UITest 进行坐标输入。
-5. 正常停止：`python3 stop.py RUN`。只有核实 guest poweroff 后才可挂载或修改运行盘。
-6. 收集日志：`python3 collect.py RUN evidence.tar.gz`。
-7. 回退：先停止虚拟机，运行 `python3 rollback.py` 查看操作，再运行 `python3 rollback.py --apply`；旧可写层会保留为归档。
+1. Verify: `shasum -a 256 -c SHA256SUMS`.
+2. Inspect the launch command: `python3 start.py --dry-run`.
+3. Start: `python3 start.py`. It creates a persistent writable layer at `runtime/system.qcow2` and leaves the separate `rootfs.qcow2` base image unchanged.
+4. Wait for `LOCAL_ROOT_INTERACTIVE_READY` in the `serial.log` under the corresponding `runs` directory. Then use the temporary diagnostic port with `python3 tools/guest-console.py RUN 'command'`. Capture the screen with `python3 tools/guest-pointer.py RUN --capture frame.ppm`. Absolute Tablet pointer coordinates are not calibrated; use the original UITest for coordinate input.
+5. Shut down cleanly with `python3 stop.py RUN`. Do not mount or modify the run disk until guest poweroff has been confirmed.
+6. Collect logs with `python3 collect.py RUN evidence.tar.gz`.
+7. Roll back by stopping the VM, running `python3 rollback.py` to inspect the plan, then `python3 rollback.py --apply`; the old writable layer is retained as an archive.
 
-默认启动的是原装鸿蒙 init/PID 1 和系统服务。Debian 仅用于构建。诊断服务、虚拟网络和证据标记属于开发预览配置。
+By default, the original HarmonyOS init/PID 1 and system services run. Debian is used only for building. Diagnostic services, virtual networking, and evidence markers are development-preview configuration.
 
-原装向导尚未完成厂商激活。较新的 test7/llvmpipe 候选已通过真实 JIT、像素、原装队列和向导页面刷新预检；DCM 接通后，SoC 证明请求在 TEEC 初始化处失败，无法取得 socIdCert。具体内核、渲染器和验收范围以 manifest.json 及 evidence 为准。本包不包含厂商私钥或已激活身份，正式安全策略与真机外设留待对应验收。
+The original setup wizard has not completed vendor activation. A newer test7/llvmpipe candidate passed preflight for actual JIT, pixels, the original queue, and wizard-page refresh. After DCM connected, the SoC-attestation request failed during TEEC initialization and could not obtain `socIdCert`. The exact kernel, renderer, and qualification scope are in `manifest.json` and the evidence. The package contains no vendor private key or activated identity; production security policy and native peripherals still need acceptance.
 
-本包不读写 U393、EFI、m1n1 或 GRUB。kernel/native-<test6或test7>-package.tar.zst 是匹配版本的配置、modules/dtbs 交接材料；原生部署需另行核对机器身份、分区和启动回退方案。
+This package does not read or write U393, EFI, m1n1, or GRUB. `kernel/native-<test6-or-test7>-package.tar.zst` contains matching configuration and modules/DTBs handoff materials; native deployment requires separately checking machine identity, partitions, and boot rollback.
 
-较新的test7集成预览会在runtime/virtual-machine.json为本运行实例创建并保存UUID；正常重启和rollback保留它，原装init由实际虚拟磁盘serial计算UDID。不同VM实例应使用独立runtime目录；不要复制其他设备身份。--dry-run不创建身份或运行盘。包内kernel、initrd与模块使用已验证固定元组，不能混用。
+A newer test7 integrated preview creates and stores a UUID for the VM instance in `runtime/virtual-machine.json`; normal restarts and rollback retain it. The original init computes UDID from the actual virtual disk serial. Use a separate runtime directory for each VM instance; do not copy another device identity. `--dry-run` does not create an identity or run disk. The package's kernel, initrd, and modules are a validated fixed set and must not be mixed.

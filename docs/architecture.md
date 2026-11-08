@@ -1,39 +1,39 @@
-# 架构
+# Architecture
 
-## 运行环境
+## Runtime environment
 
-启动链由 Apple 平台引导组件、m1n1/UEFI/GRUB、Aurora 内核及独立 initramfs 组成。initramfs 加载匹配的 Apple 驱动、发现 HarmonyOS 根分区，随后 switch_root 到原装 `/system/bin/init`。
+The boot chain consists of Apple platform boot components, m1n1/UEFI/GRUB, the Aurora kernel, and a separate initramfs. The initramfs loads the matching Apple drivers, locates the HarmonyOS root partition, and then uses `switch_root` to start the original `/system/bin/init`.
 
-目标用户态使用 HarmonyOS 自己的参数服务、SAMgr、HDF、Foundation、RenderService、SceneBoard 与 MMI。Debian/UTM 用作构建、诊断和救援环境。
+The target user space uses HarmonyOS's own parameter service, SAMgr, HDF, Foundation, RenderService, SceneBoard, and MMI. Debian/UTM is used for building, diagnostics, and recovery.
 
-## 内核适配
+## Kernel adaptation
 
-固定 Aurora 基线与 OpenHarmony 来源见 [source-lock.json](../ports/kernel/source-lock.json)。核心工作包括：
+The pinned Aurora baseline and OpenHarmony sources are listed in [source-lock.json](../ports/kernel/source-lock.json). The main work includes:
 
-- 在 16 KiB 内核页环境中处理鸿蒙 4 KiB 用户页契约。
-- Binder 映射边界和原生页分配处理。
-- AccessToken/ftoken 身份字段与 Binder 传递。
-- ashmem 兼容模块。
-- exec 后用户页策略与 BPF ringbuf 用户映射。
+- Supporting HarmonyOS's 4 KiB user-page contract with a 16 KiB kernel page size.
+- Handling Binder mapping boundaries and native page allocation.
+- AccessToken/ftoken identity fields and Binder identity propagation.
+- An ashmem compatibility module.
+- User-page policy after `exec` and BPF ring-buffer user mappings.
 
-内核、modules、设备树及 initramfs 需要使用同一构建版本。固定 test7 名称仍保留在原生工具中，升级需要重新核对。
+The kernel, modules, device tree, and initramfs must come from the same build. Native tools still pin the `test7` name and must be rechecked when upgrading.
 
-## 软件显示路线
+## Software display path
 
-应用/RenderService → OHOS EGL/NativeWindow 桥 → Mesa llvmpipe → 原装缓冲队列 → HDF allocator/composer → DRM/KMS → Apple 显示驱动。
+Application/RenderService → OHOS EGL/NativeWindow bridge → Mesa llvmpipe → original buffer queue → HDF allocator/composer → DRM/KMS → Apple display driver.
 
-`buffer_vdi.cpp` 使用 DRM dumb/PRIME 缓冲；`egl_window_bridge.cpp` 在 Mesa GBM 与鸿蒙 NativeWindow 队列之间传递像素；`composer.cpp` 将客户端合成目标复制到持久扫描缓冲并提交 KMS。当前所有 layer 回退为 CLIENT，没有硬件 overlay/cursor 加速。
+`buffer_vdi.cpp` allocates DRM dumb/PRIME buffers; `egl_window_bridge.cpp` transfers pixels between Mesa GBM and the HarmonyOS NativeWindow queue; `composer.cpp` copies the client-composed target into persistent scanout buffers and submits them to KMS. All layers currently fall back to CLIENT composition; there is no hardware overlay or cursor acceleration.
 
-平台 C++ 边界使用原装 `std::__h` / `libc++.so`，Mesa 内部 SDK `std::__n1` 对象不跨边界。固定镜像使用 56 字节 BufferHandle ABI，不能直接换成公开 API20 的 64 字节结构。
+The platform C++ boundary uses the original `std::__h` / `libc++.so`; SDK `std::__n1` objects do not cross that boundary. The pinned image uses a 56-byte BufferHandle ABI, which cannot be replaced directly with the public API 20 64-byte layout.
 
-真机只有显示节点、无 renderD 节点时，现有 llvmpipe 路线需要显式设置 `GBM_ALWAYS_SOFTWARE=1`；仅设置 `LIBGL_ALWAYS_SOFTWARE` 不能代替 GBM 软件路径选择。
+On native hardware with a display node but no renderD node, the current llvmpipe path requires `GBM_ALWAYS_SOFTWARE=1`; setting only `LIBGL_ALWAYS_SOFTWARE` does not select the GBM software path.
 
-## 原生启动经验
+## Native boot notes
 
-外置 USB-C 根盘依赖 Type-C 图，显示驱动提供部分路由 provider。将 appledrm 延迟到挂载根盘后加载会形成启动顺序依赖，因此原生 bootstrap 在查找根盘前加载相关显示模块。PMP 驱动也必须包含在 initramfs 中并先于 appledrm 加载。
+An external USB-C root disk depends on the Type-C device graph, and the display driver provides some route providers. Loading `appledrm` only after mounting the root disk creates a boot-order dependency, so the native bootstrap loads related display modules before searching for the root disk. The PMP driver must also be in the initramfs and loaded before `appledrm`.
 
-保留的原生脚本含历史根 UUID、精确内核版本和日志目标约束，是特定验证基线；迁移至另一台机器前需要逐项调整，见 [运行说明](running.md)。
+The retained native scripts contain historical root UUID, exact kernel-version, and log-target constraints. They correspond to a specific validation baseline and must be reviewed before moving to another machine; see [Running and native boot](running.md).
 
-## L410 参考边界
+## L410 reference boundary
 
-最初参考材料来自 L410 HarmonyOS 适配工作。麒麟/Mali、功放、指纹和 Linux 应用兼容平台等实现没有整套复制到本仓库。Apple 平台的内核、allocator/composer 与 EGL 桥接实现集中在 `ports/`，不依赖仓库外的 `l410/` 源码目录。原装镜像中的系统库仍属于外部构建输入。
+The initial reference material came from L410 HarmonyOS adaptation work. The Kirin/Mali, amplifier, fingerprint, and Linux application-compatibility implementations were not copied wholesale into this repository. Apple-platform kernel, allocator/composer, and EGL bridge work is under `ports/` and does not depend on an external `l410/` source directory. System libraries in the original image remain external build inputs.

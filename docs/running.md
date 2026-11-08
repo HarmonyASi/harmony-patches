@@ -1,10 +1,10 @@
-# 运行与原生启动
+# Running and native boot
 
-## macOS 开发预览
+## macOS development preview
 
-仓库的 `ports/release/` 是预览包工具源码，需要配套镜像、内核、initrd 和 manifest。镜像网盘链接将集中在根 README 中。
+`ports/release/` contains source for the preview-package tools and requires a matching image, kernel, initrd, and manifest. The image download link is maintained in the root README.
 
-拿到完整预览包后，在**预览包目录**中执行：
+With a complete preview package, run these commands from the **preview package directory**:
 
 ```sh
 shasum -a 256 -c SHA256SUMS
@@ -12,27 +12,27 @@ python3 start.py --dry-run
 python3 start.py --window
 ```
 
-依赖 Apple Silicon macOS、QEMU、Python 3 和 lsof。以具体包的 README 和 manifest 为准：普通预览与 direct-desktop 候选的启动行为不同。
+Requirements are Apple Silicon macOS, QEMU, Python 3, and lsof. Follow the specific package README and manifest: a standard preview and a direct-desktop candidate have different startup behavior.
 
-启动器创建 `runtime/system.qcow2` 持久可写层和 runs 记录。避免并发打开同一运行盘。使用 `python3 stop.py RUN` 请求正常关机，确认退出后再挂载或修改磁盘；`collect.py` 收集运行记录，`rollback.py` 默认查看回退计划，`--apply` 才执行回退。
+The launcher creates a persistent writable layer at `runtime/system.qcow2` and run records. Do not open the same run disk concurrently. Use `python3 stop.py RUN` to request a clean shutdown, and confirm the VM has exited before mounting or modifying the disk. `collect.py` gathers run records; `rollback.py` displays a rollback plan by default and only applies it with `--apply`.
 
-诊断控制台、虚拟网络和结束 OOBE 的处理属于开发配置。direct-desktop 候选结束向导后进入桌面，不表示设备已激活；部分应用仅验证能打开窗口。
+The diagnostic console, virtual networking, and OOBE completion are development configuration. A direct-desktop candidate reaching the desktop after ending the wizard does not mean the device is activated; some applications have only been verified to open a window.
 
-## 原生部署
+## Native deployment
 
-当前仓库没有面向任意机器的一键安装器。保留的原生脚本对应已有 J514S/test7 验证基线：
+This repository does not provide a one-click installer for arbitrary machines. The retained native scripts correspond to the existing J514S/test7 validation baseline:
 
-- `initramfs/native-stage-init` 约束历史根 UUID 和内核版本，默认只读 rescue；boot 模式还要求 rootfs 上的准备标记。
-- `initramfs/native-log-collect` 含原测试环境的日志保存目标和设备约束，需要审查后适配。
-- `tools/populate-rootfs.sh` 写入已经挂载的独立 ext4，默认 UUID 是原测试分区；使用其他目标必须显式传入其实际 UUID。
-- `tools/adapt-local-root.py` 与服务配置工具修改离线 rootfs，不能把目录参数指向正在运行的系统根。
+- `initramfs/native-stage-init` pins the historical root UUID and kernel version, defaults to read-only rescue, and also requires a rootfs preparation marker in boot mode.
+- `initramfs/native-log-collect` contains the original test environment's log destination and device constraints; review and adapt it before use.
+- `tools/populate-rootfs.sh` writes to an already mounted standalone ext4 filesystem. Its default UUID is the original test partition; explicitly pass the actual UUID for any other target.
+- `tools/adapt-local-root.py` and the service configuration tools modify an offline rootfs. Do not point them at a running system root.
 
-原 U393 的 GPT/分区重排脚本未收录，EFI、GRUB 和 m1n1 的个人备份也未收录。移植者需要为自己的设备准备独立根分区、匹配固件及可回退启动项，重新核对磁盘身份、UUID 和脚本中的固定参数。
+The original U393 GPT/partition-rearrangement script is not included, nor are personal EFI, GRUB, or m1n1 backups. Porters need a separate root partition, matching firmware, and a boot entry with a rollback path, and must recheck disk identity, UUIDs, and fixed script parameters for their machine.
 
-原 L410 ISO 的安装器会清空目标整盘，不能直接作为 Apple 平台或已有分区布局的安装方法。构建流程只使用只读提取的载荷。
+The original L410 ISO installer erases the entire target disk and must not be used as an installation method for Apple hardware or an existing partition layout. The build process only uses read-only extracted payloads.
 
-## 日志与反馈
+## Logs and reports
 
-原生失败启动可由 bootstrap 自动保存日志；现有实现优先使用外置测试盘，回退日志目标包含内置 ESP。采用该机制前应核对自己设备的保存位置。公开反馈前移除设备标识、个人路径、网络地址和账号信息。
+The bootstrap can save logs after a native boot failure. The current implementation prefers an external test disk, and its fallback log destination includes the internal ESP. Check the destination before adopting this mechanism. Remove device identifiers, personal paths, network addresses, and account information before sharing reports.
 
-报告问题时提供机型、源码提交、镜像/内核版本、是否原生或 HVF、复现步骤，以及实际画面与关键日志。固件加载、服务就绪与桌面可见应分别记录。
+When reporting a problem, include the model, source commit, image/kernel version, whether the run was native or HVF, reproduction steps, and the actual display result and relevant logs. Record firmware loading, service readiness, and desktop visibility as separate milestones.

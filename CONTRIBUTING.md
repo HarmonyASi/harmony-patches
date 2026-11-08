@@ -1,17 +1,17 @@
-# 贡献
+# Contributing
 
-开发入口见 [构建说明](docs/build.md)，验证边界见 [状态说明](docs/status.md)。新增机型或镜像时记录准确硬件、依赖提交、内核配置、产物哈希与实测范围。
+See the [build guide](docs/build.md) for development entry points and the [status guide](docs/status.md) for verification boundaries. When adding a device or image, record the exact hardware, dependency commits, kernel configuration, artifact hashes, and scope of hands-on testing.
 
-提交前运行：
+Before submitting changes, run:
 
 ```sh
 python3 scripts/check-repository.py
 ```
 
-检查包含文件体积、生成物、常见私钥/令牌、个人绝对路径、文档相对链接、Python 语法和 shell 语法。不构建系统、不访问设备，也不运行启动或部署脚本。
+The check covers file sizes, generated artifacts, common private-key/token patterns, personal absolute paths, relative documentation links, Python syntax, and shell syntax. It does not build the system, access a device, or run boot or deployment scripts.
 
-单文件上限为 1 MiB，仓库内容总量上限为 10 MiB。源码确需超限时调整检查并解释原因；镜像和构建产物通过 README 的网盘入口提供。原始日志与聊天记录保留在本地，反馈只附必要的脱敏片段。
+The per-file size limit is 1 MiB and the repository content limit is 10 MiB. If source genuinely needs to exceed a limit, adjust the check and explain why; images and build artifacts are provided through the Baidu Netdisk link in the README. Keep raw logs and chat records local, and include only necessary, redacted excerpts in reports.
 
-运行行为修改应提供有针对性的验证，区分虚拟测试、真机实测与推测。文档和源码整理不能算作重新验证系统。
+Behavior changes should include targeted validation and distinguish virtual tests, native-hardware tests, and hypotheses. Documentation or source cleanup does not count as re-validating the system.
 
-原创贡献按 GPL-3.0-only 发布。引入上游文件时保留版权和许可，更新第三方来源说明。
+Original contributions are released under GPL-3.0-only. Preserve copyright and license notices when bringing in upstream files, and update the third-party source documentation.

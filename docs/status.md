@@ -1,45 +1,45 @@
-# 状态与验证范围
+# Status and verification scope
 
-整理日期：2026-11-07；开发证据截至 2026-11-05。本页汇总既有开发记录与用户实测反馈，本次仓库整理未重新启动虚拟机或真机。
+Updated: 2026-11-07; development evidence through 2026-11-05. This page summarizes existing development records and user-reported tests. This documentation update did not reboot a VM or native device.
 
-## 真机
+## Native hardware
 
-目标硬件为 Apple M3 Pro / J514S。已有部署使用独立 HarmonyOS 根分区，经现有 Apple/Aurora 启动链加载匹配的 test7 内核与 initramfs。
+The target hardware is Apple M3 Pro / J514S. Existing deployments use a separate HarmonyOS root partition, booted through the existing Apple/Aurora chain with a matching test7 kernel and initramfs.
 
-| 项目 | 已知结果 | 尚缺验证 |
+| Area | Known result | Verification still needed |
 | --- | --- | --- |
-| USB-C 外置根盘 | 提前加载显示路由相关模块后，实际启动已发现并挂载根盘 | 其他设备、端口与机器 |
-| 内屏初始化 | 补入匹配的 apple-pmp 模块后，DCP 启动内屏，记录为 3024×1890@120 | 刷新时序、无撕裂与性能 |
-| 原装桌面与应用 | 用户确认桌面可见、设置可打开 | 应用内部完整功能、本地 HAP 安装与持久化复验 |
-| 触控板 | 用户确认可使用 | 键盘完整输入、手势及其他输入设备 |
-| 光标拖影 | 用户报告严重残留；composer 已增加目标扫描缓冲 DMA-BUF 写入同步 | 修复后的真机效果 |
-| 首显速度 | 用户报告黑屏约半分钟后出现画面；已加入单调时钟帧时间记录 | 原因定位和修复 |
-| 外设与稳定性 | 尚无完整验收结论 | 音频、无线网络、蓝牙、电源管理、多屏、重复启动与长期运行 |
+| External USB-C root disk | Native boot found and mounted the disk after display-route modules were loaded early | Other devices, ports, and machines |
+| Internal display initialization | After adding the matching apple-pmp module, DCP initialized the display; recorded mode is 3024×1890@120 | Refresh timing, tearing, and performance |
+| Original desktop and apps | User confirmed the desktop was visible and Settings opened | Full in-app behavior, local HAP installation, and persistence retest |
+| Trackpad | User confirmed it works | Full keyboard input, gestures, and other input devices |
+| Cursor trails | User reported severe trails; composer now synchronizes DMA-BUF writes to the target scanout buffer | Retest the fix on native hardware |
+| Time to first image | User reported a black screen for about half a minute; monotonic frame-time logging has been added | Diagnose and fix the delay |
+| Peripherals and stability | No complete acceptance result | Audio, wireless networking, Bluetooth, power management, multiple displays, repeated boots, and long-running use |
 
-显示输出为软件渲染路线。驱动已注册、应用启动命令返回成功、服务已注册，均不能单独证明画面或功能正常。
+The display uses software rendering. A registered driver, successful application launch command, or registered service does not by itself prove that the image is visible or the feature works.
 
-## 虚拟环境分项
+## Virtual component tests
 
-历史 macOS/HVF 测试记录包括：
+Historical macOS/HVF test records include:
 
-- 原装鸿蒙 init/PID 1、SAMgr/HDF 与核心服务启动。
-- test7 的 16 KiB 内核 / 4 KiB 用户页接口，Binder、ashmem、AccessToken 与 BPF ringbuf 回归。
-- 原装 ConsumerSurface/NativeWindow 六帧申请、提交、消费、回收和像素校验。
-- RenderService 最小动态场景：两次背景改色、1280×800 扫描输出逐像素匹配。
-- llvmpipe JIT 与图形队列分项、预览启动、持久层、正常停机和回退。
-- 后期直接桌面候选进入桌面、部分应用能打开窗口；存在图标、壁纸及应用行为缺陷。
+- Original HarmonyOS init/PID 1, SAMgr/HDF, and core service startup.
+- test7 16 KiB kernel / 4 KiB user-page interfaces and Binder, ashmem, AccessToken, and BPF ring-buffer regression tests.
+- Six original ConsumerSurface/NativeWindow buffer request, submit, consume, recycle, and pixel-check cycles.
+- A minimal dynamic RenderService scene: two background color changes with pixel-exact comparison of 1280×800 scanout output.
+- llvmpipe JIT and graphics queue component tests, preview startup, persistent overlay, clean shutdown, and rollback.
+- A later direct-desktop candidate reaching the desktop and opening some application windows, with icon, wallpaper, and application behavior defects.
 
-这些结果来自不同测试轮次和固定产物组合，不能合并宣称任意镜像或当前源码已完整验收。原始日志、帧图和磁盘留在开发归档；本仓库仅公开总结与探针源码。
+These results came from different test runs and fixed artifact combinations. They cannot be combined into a claim that an arbitrary image or the current source has passed full qualification. Original logs, frames, and disks remain in the development archive; this repository publishes only summaries and probe source.
 
-## 激活与安全策略
+## Activation and security policy
 
-原装 DCM 已进入 HDI，SoC 证明仍在 TEEC 初始化阶段失败，无法取得 socIdCert。结束开发候选的 OOBE 不代表商业激活成功。
+The original DCM reached HDI, but SoC attestation still fails during TEEC initialization and cannot obtain `socIdCert`. Ending OOBE in a development candidate does not mean commercial activation succeeded.
 
-历史测试使用过 permissive SELinux 和诊断服务配置。正式 enforcing 策略、权限隔离及相关安全回归尚未完成。华为账号、云服务、应用市场及厂商商业激活不在已确认的基础适配验收范围内。
+Historical tests used permissive SELinux and diagnostic service configuration. The production enforcing policy, permission isolation, and related security regression testing are not complete. Huawei accounts, cloud services, the app store, and vendor commercial activation are outside the confirmed basic port acceptance scope.
 
-## 下一步
+## Next steps
 
-1. 复验 composer 同步修复，确认光标拖影是否改善。
-2. 根据帧时间与启动日志定位首显延迟。
-3. 补齐构建依赖、内核初始配置和完整服务配置的可复现交接材料。
-4. 对指定发布镜像逐项记录输入、应用、HAP、持久化和外设结果。
+1. Retest the composer synchronization fix and determine whether cursor trails improve.
+2. Use frame timing and boot logs to locate the first-image delay.
+3. Complete reproducible handoff material for build dependencies, initial kernel configuration, and full service configuration.
+4. For a specified release image, record input, application, HAP, persistence, and peripheral results individually.

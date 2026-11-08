@@ -1,23 +1,23 @@
-# Aurora 鸿蒙显示后端
+# Aurora HarmonyOS display backend
 
-当前为 OHOS ABI Mesa 软件渲染、原装 NativeWindow 队列与 DRM/KMS 输出。最新真机状态见 [状态说明](../../docs/status.md)，构建入口见 [构建说明](../../docs/build.md)。
+The current path uses Mesa software rendering with the OHOS ABI, the original NativeWindow queue, and DRM/KMS output. See [status](../../docs/status.md) for the latest native-hardware state and the [build guide](../../docs/build.md) for build entry points.
 
-## 组件
+## Components
 
-- `drm_device.c` 枚举 DRM card，忽略 simpledrm，优先 appledrm 与内屏。
-- `buffer_vdi.cpp` 使用 dumb/PRIME 分配线性 RGBA/RGBX/BGRA/BGRX 缓冲，写回原装 HDI 所需的 `BufferHandle.virAddr`，拒绝 protected buffer。
-- `composer.cpp` 全部 layer 回退 CLIENT，将客户端目标复制到持久双缓冲，执行 DMA-BUF CPU 写入同步并提交 KMS。同步等待翻页，超时保留 pending 状态。
-- `egl_window_bridge.cpp` 以独立 `libEGL_impl.so` 加载 OHOS Mesa EGL，通过 GBM backing 保留 GLES 默认 framebuffer 语义；swap 转换像素并提交到鸿蒙队列，按实际 geometry 延迟创建 backing。
-- `patches/` 包含 Mesa profiler 开销修正、资源释放和有界绘制诊断补丁。诊断补丁按需使用。
+- `drm_device.c` enumerates DRM cards, ignores simpledrm, and prefers appledrm and the internal display.
+- `buffer_vdi.cpp` allocates linear RGBA/RGBX/BGRA/BGRX dumb/PRIME buffers, fills in `BufferHandle.virAddr` as required by the original HDI, and rejects protected buffers.
+- `composer.cpp` falls back to CLIENT composition for all layers, copies the client target into persistent double buffers, synchronizes CPU writes to DMA-BUF, and submits to KMS. It waits for page flips and retains pending state on timeout.
+- `egl_window_bridge.cpp` loads OHOS Mesa EGL from a separate `libEGL_impl.so`, preserves GLES default-framebuffer semantics with a GBM backing surface, and converts/submits pixels to the HarmonyOS queue on swap. Backing surfaces are created lazily using the actual geometry.
+- `patches/` contains Mesa profiler overhead fixes, resource-release fixes, and bounded-draw diagnostics. Diagnostic patches are optional.
 
-## ABI 与测试
+## ABI and tests
 
-平台边界使用原装 `std::__h` 和 `libc++.so`，SDK 的 `std::__n1` 对象不跨边界传递。`buffer_handle.h` 为固定镜像的 56 字节内部 ABI，不能换成 API20 的 64 字节布局。
+The platform boundary uses the original `std::__h` and `libc++.so`; SDK `std::__n1` objects do not cross it. `buffer_handle.h` defines a 56-byte internal ABI for the pinned image and cannot be replaced with the 64-byte API 20 layout.
 
-构建入口在 `../tools/`：`build-buffer-vdi.sh`、`build-composer.sh`、`build-egl-window-bridge.sh`。测试源码在 `../tests/`，覆盖 allocator/composer、EGL、原装队列、RenderService 和 VSync。
+Build entry points are under `../tools/`: `build-buffer-vdi.sh`, `build-composer.sh`, and `build-egl-window-bridge.sh`. Tests are under `../tests/` and cover allocator/composer, EGL, the original queue, RenderService, and VSync.
 
-## 限制
+## Limitations
 
-当前单连接器、首选模式，无硬件 overlay/cursor、HDR 或完整热插拔处理。vsync 按所选 mode 周期调度，尚未锁定硬件 vblank。CPU 复制性能、多线程、多窗口及跨进程 metadata 语义需要继续验证。真机光标拖影与首显延迟尚未完成修复验收。
+The current implementation supports one connector and its preferred mode, without hardware overlay/cursor, HDR, or complete hotplug handling. VSync is scheduled from the selected mode and is not locked to hardware vblank. CPU-copy performance, multithreading, multiple windows, and cross-process metadata semantics need further verification. Native cursor trails and time-to-first-image have not completed fix acceptance.
 
-接口来源和固定提交见 [第三方说明](../../docs/third-party.md)。
+Interface sources and pinned commits are listed in [Third-party sources and licenses](../../docs/third-party.md).
