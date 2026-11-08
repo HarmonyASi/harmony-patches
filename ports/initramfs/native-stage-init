@@ -34,25 +34,27 @@ for arg in $(cat /proc/cmdline); do
         hmos.selftest=*) selftest=${arg#*=};;
     esac
 done
-test "$root_uuid" = de5b04b6-597d-4382-b6a3-9e04388ccd6d || rescue unexpected-root-uuid
+expected_root_uuid=$(cat /etc/hmos-native-root-uuid 2>/dev/null) || rescue missing-device-profile
+kernel_release=$(cat /etc/hmos-native-kernel-release 2>/dev/null) || rescue missing-device-profile
+test "$root_uuid" = "$expected_root_uuid" || rescue unexpected-root-uuid
 case "$mode" in rescue|boot) ;; *) rescue invalid-mode;; esac
 echo HMOS_NATIVE_BOOTSTRAP_BEGIN
 cat /proc/version
 # Use modules from this initramfs only, matched to this exact kernel release.
-test "$(uname -r)" = 7.2.11-aurora-hmos-j514s-test7 || rescue kernel-module-version-mismatch
-for module in pinctrl-apple-gpio gpio-shared-proxy spi-apple i2c-pasemi-platform \
-    spmi-apple-controller apple_nvmem_spmi macsmc gpio-macsmc sn201202x tps6598x \
-    phy-apple-atc dwc3-apple thunderbolt_apple onboard_usb_dev \
-    mux-apple-display-crossbar phy-apple-dptx typec_displayport \
-    apple-sart nvme-apple apple-rtkit-helper apple-sio apple-dockchannel \
-    dockchannel-hid spi-hid-apple-of hid-apple hid-magicmouse hid-multitouch macsmc-input; do
+test "$(uname -r)" = "$kernel_release" || rescue kernel-module-version-mismatch
+test -r /etc/hmos-native-pre-root-modules || rescue missing-device-profile
+test -r /etc/hmos-native-pre-root-display-modules || rescue missing-device-profile
+while IFS= read -r module; do
+    test -n "$module" || continue
     modprobe "$module" >>/run/hmos-native-module-load.log 2>&1 || echo "HMOS_NATIVE_MODULE_LOAD_FAILED name=$module"
- done
+done </etc/hmos-native-pre-root-modules
 # External Type-C connector graphs include DCP mode-switch providers. Waiting
 # until after the USB root mount to register those providers can leave the PD
 # controller deferred, so the USB host never enumerates the root disk.
-modprobe apple-pmp >>/run/hmos-native-module-load.log 2>&1 || echo HMOS_NATIVE_MODULE_LOAD_FAILED name=apple-pmp
-modprobe appledrm >>/run/hmos-native-module-load.log 2>&1 || echo HMOS_NATIVE_MODULE_LOAD_FAILED name=appledrm
+while IFS= read -r module; do
+    test -n "$module" || continue
+    modprobe "$module" >>/run/hmos-native-module-load.log 2>&1 || echo "HMOS_NATIVE_MODULE_LOAD_FAILED name=$module"
+done </etc/hmos-native-pre-root-display-modules
 root_device=
 for attempt in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45; do
     for alias in $(find /sys/devices -name modalias -type f 2>/dev/null); do

@@ -3,7 +3,7 @@
 # Does not partition or format a disk. Does not start the original installer.
 set -euo pipefail
 export PATH=/usr/sbin:/usr/bin:/sbin:/bin
-source_root=${1:?usage: populate-rootfs.sh READ_ONLY_SOURCE_ROOT TARGET_MOUNT [EXPECTED_UUID]}
+source_root=${1:?usage: populate-rootfs.sh READ_ONLY_SOURCE_ROOT TARGET_MOUNT [EXPECTED_UUID (defaults to J514S)]}
 target=${2:?}
 expected_uuid=${3:-de5b04b6-597d-4382-b6a3-9e04388ccd6d}
 test "$(id -u)" = 0

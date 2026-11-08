@@ -22,7 +22,7 @@ The diagnostic console, virtual networking, and OOBE completion are development 
 
 This repository does not provide a one-click installer for arbitrary machines. The retained native scripts correspond to the existing J514S/test7 validation baseline:
 
-- `initramfs/native-stage-init` pins the historical root UUID and kernel version, defaults to read-only rescue, and also requires a rootfs preparation marker in boot mode.
+- `initramfs/native-stage-init` reads the root UUID, kernel release, and ordered early-module lists from the matching generated device profile. The default profile preserves the historical J514S/test7 values; J293 remains an unqualified candidate and cannot produce an initramfs until its matching values and artifacts exist. Rescue remains the default, and boot mode also requires a rootfs preparation marker.
 - `initramfs/native-log-collect` contains the original test environment's log destination and device constraints; review and adapt it before use.
 - `tools/populate-rootfs.sh` writes to an already mounted standalone ext4 filesystem. Its default UUID is the original test partition; explicitly pass the actual UUID for any other target.
 - `tools/adapt-local-root.py` and the service configuration tools modify an offline rootfs. Do not point them at a running system root.

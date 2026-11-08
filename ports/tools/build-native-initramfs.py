@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Build a native test7 initramfs from matched modules, static tools and audited firmware. No devices accessed."""
+"""Build a native initramfs from a qualified device profile and matched inputs. No devices accessed."""
 import argparse, gzip, hashlib, io, json, os, re, shutil, stat, tarfile
 from pathlib import Path
+from native_device_profiles import get_profile, load_profiles, require_build_inputs
 p=argparse.ArgumentParser(description=__doc__)
+p.add_argument('--device-profile',choices=sorted(load_profiles()),default='j514s',
+               help='native device profile (default: j514s)')
 p.add_argument('--modules',type=Path,required=True)
 p.add_argument('--bootstrap',type=Path,required=True)
 p.add_argument('--firmware',type=Path,required=True)
@@ -11,7 +14,12 @@ p.add_argument('--kernel-log',type=Path,required=True)
 p.add_argument('--fat-uuid',type=Path,required=True)
 p.add_argument('--output',type=Path,required=True)
 a=p.parse_args()
-release='7.2.11-aurora-hmos-j514s-test7'
+try:
+    profile=require_build_inputs(get_profile(a.device_profile))
+except ValueError as exc:
+    p.error(str(exc))
+release=profile['kernel_release']
+root_uuid=profile['root_uuid']
 source=a.modules/'lib/modules'/release
 assert source.is_dir() and not a.output.exists()
 assert not a.output.resolve().is_relative_to('/dev')
@@ -20,7 +28,7 @@ for line in (source/'modules.dep').read_text().splitlines():
     name, values=line.split(':',1);deps[name]=values.split()
 byname={Path(k).stem.replace('-','_'):k for k in deps}
 builtins={Path(x).stem.replace('-','_') for x in (source/'modules.builtin').read_text().splitlines()}
-seed='pinctrl-apple-gpio gpio-shared-proxy spi-apple i2c-pasemi-platform spmi-apple-controller apple_nvmem_spmi macsmc gpio-macsmc sn201202x tps6598x phy-apple-atc dwc3-apple thunderbolt_apple onboard_usb_dev mux-apple-display-crossbar phy-apple-dptx typec_displayport apple-sart nvme-apple apple-rtkit-helper apple-sio apple-dockchannel dockchannel-hid spi-hid-apple-of hid-apple hid-magicmouse hid-multitouch macsmc-input apple-pmp appledrm'.split()
+seed=profile['module_seed']
 soft={}
 for line in (source/'modules.softdep').read_text().splitlines():
     bits=line.split()
@@ -40,6 +48,14 @@ for name in seed:add(name)
 assert not missing, f'Missing module requirements: {missing}'
 a.output.mkdir(parents=True);root=a.output/'root';root.mkdir()
 for name in ['bin','dev','proc','sys','run','newroot','etc','lib/firmware']:(root/name).mkdir(parents=True,exist_ok=True)
+(root/'etc/hmos-native-kernel-release').write_text(release+'\n')
+(root/'etc/hmos-native-root-uuid').write_text(root_uuid+'\n')
+(root/'etc/hmos-native-pre-root-modules').write_text(
+    '\n'.join(profile['pre_root_modules'])+'\n'
+)
+(root/'etc/hmos-native-pre-root-display-modules').write_text(
+    '\n'.join(profile['pre_root_display_modules'])+'\n'
+)
 for name in ['init','bin/busybox','bin/binder-setup','bin/input-device-permissions']:
     f=a.bootstrap/name
     assert f.read_bytes()[:4]==b'\x7fELF',name
@@ -108,5 +124,5 @@ for f in [root]+sorted(root.rglob('*')):
 name=b'TRAILER!!!\0';fields=[0,0,0,0,1,0,0,0,0,0,0,len(name),0]
 archive.write(b'070701'+b''.join(f'{v:08x}'.encode() for v in fields)+name);archive.write(b'\0'*(-archive.tell()%512))
 image=a.output/'native-initrd.img';image.write_bytes(gzip.compress(archive.getvalue(),compresslevel=6,mtime=0))
-manifest={'kernel_release':release,'root_uuid':'de5b04b6-597d-4382-b6a3-9e04388ccd6d','default_mode':'readonly rescue','module_count':len(selected)+1,'modules':sorted(selected)+['hmos_ashmem.ko'],'firmware_source_sha256':hashlib.file_digest(a.firmware.open('rb'),'sha256').hexdigest(),'image_sha256':hashlib.file_digest(image.open('rb'),'sha256').hexdigest(),'image_bytes':image.stat().st_size,'native_boot_verified':False}
+manifest={'device_profile':profile['id'],'device_model':profile['model'],'kernel_release':release,'root_uuid':root_uuid,'default_mode':'readonly rescue','module_count':len(selected)+1,'modules':sorted(selected)+['hmos_ashmem.ko'],'firmware_source_sha256':hashlib.file_digest(a.firmware.open('rb'),'sha256').hexdigest(),'image_sha256':hashlib.file_digest(image.open('rb'),'sha256').hexdigest(),'image_bytes':image.stat().st_size,'native_boot_verified':False}
 (a.output/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n');print(json.dumps(manifest,indent=2))
