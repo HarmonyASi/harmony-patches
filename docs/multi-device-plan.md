@@ -54,6 +54,7 @@ The initial identity and DTS evidence are available. The next missing inputs are
 - macOS and boot-firmware versions, plus the intended HarmonyOS image/build.
 - The kernel source commit, config, release string, modules, and firmware intended for the HarmonyMac J293 build.
 - Which root-storage layout is intended for J293, and whether the HarmonyOS root must retain writable state across reboot; confirm the target filesystem and persistence behavior before assigning or recording any root UUID.
+- The boot manager and configuration that currently launch Fedora on this J293, the EFI/system partition involved, and a verified recovery route. Do not assume macOS can mount Fedora ext4 or that a new GRUB entry is isolated from the existing boot path.
 - A sanitized boot log from a known-good operating system and any Aurora attempt.
 - Observed boot path, root-disk connection, display, keyboard/trackpad, and peripheral behavior on this machine.
 - Any device configuration required by the HarmonyOS image that differs from J514S.

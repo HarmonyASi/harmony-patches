@@ -29,6 +29,14 @@ This repository does not provide a one-click installer for arbitrary machines. T
 
 The original U393 GPT/partition-rearrangement script is not included, nor are personal EFI, GRUB, or m1n1 backups. Porters need a separate root partition, matching firmware, and a boot entry with a rollback path, and must recheck disk identity, UUIDs, and fixed script parameters for their machine.
 
+### J293 boot-path proposal: not verified
+
+The repository describes the general Apple platform → m1n1/UEFI/GRUB → Aurora kernel/initramfs chain, but contains no J293 boot entry, Fedora GRUB configuration, or Fedora installation procedure. The only recorded native root-disk result is for J514S using an external USB-C disk. It does not establish how this J293 Fedora installation boots or which boot manager/configuration it uses.
+
+Do not assume macOS can mount or safely modify the Fedora ext4 filesystem; that depends on the macOS version and separately installed filesystem support, neither of which is established here. Likewise, a Fedora GRUB menu entry is not proven to be isolated from the existing boot path or guaranteed not to prevent normal boot. Its effect and recovery behavior depend on the actual firmware boot selection, EFI files, GRUB installation/configuration, entry placement, kernel/DTB/initramfs paths, and fallback configuration.
+
+Before considering such a setup, identify the currently active boot path and its owner, confirm where its configuration and EFI files reside, establish a tested recovery route, and determine how the relevant ext4 files can be accessed without risking the Fedora system. J293 still has no qualified HarmonyOS root filesystem, root UUID, or initramfs; the recorded kernel and DTB evidence is compile-only. No partition, EFI, GRUB, or other bootloader changes were performed as part of this work.
+
 The original L410 ISO installer erases the entire target disk and must not be used as an installation method for Apple hardware or an existing partition layout. The build process only uses read-only extracted payloads.
 
 ## Logs and reports
