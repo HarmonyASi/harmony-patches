@@ -6,6 +6,26 @@ The only documented native-hardware validation target is Apple M3 Pro / J514S. T
 
 The goal of the first phase is not to claim broad support, but to add a second, explicitly identified target without regressing J514S.
 
+## First candidate: MacBook Pro (13-inch, M1, 2020) / J293
+
+The supplied device tree identifies this machine as `apple,j293` and `apple,t8103`. Its model-specific nodes describe the internal panel/DCP path, Touch Bar, SPI HID input, I2C audio codecs, and `apple,honshu` Wi-Fi/Bluetooth board types. These are hardware-description evidence only; they do not establish that the current HarmonyMac kernel, initramfs, firmware, or HarmonyOS services support those components.
+
+| Area | Evidence and current status |
+| --- | --- |
+| Identity | Identified by the supplied DTS as MacBook Pro (13-inch, M1, 2020), J293 / T8103. |
+| Device tree | J293-specific DTS is available for comparison. It has not been integrated into or validated with the HarmonyMac boot chain. |
+| Kernel and modules | Not qualified. The repository's native baseline is Linux 7.2.11 with the J514S-specific `-aurora-hmos-j514s-test7` release. |
+| Storage and boot path | Not tested with HarmonyMac on J293. |
+| Display and Touch Bar | DTS describes the J293 panel/DCP and Touch Bar; neither has been tested with HarmonyMac. |
+| Input | DTS describes SPI HID input; it has not been tested with HarmonyMac. |
+| Audio | DTS describes TI speaker codecs and a Cirrus jack codec; audio has not been tested with HarmonyMac. |
+| Wi-Fi and Bluetooth | DTS identifies the `apple,honshu` board type. Matching HarmonyMac drivers and firmware have not been qualified. |
+| HarmonyOS startup and services | Not tested on J293. |
+
+An installed Fedora Asahi reference provides a J293 DTB and modules for Linux `6.19.13-400.asahi.fc44.aarch64+16k`; its config enables Apple-specific support including DART, SART, AOP, PMP, Apple DRM, NVMe, SPI, and HID. This is useful only as evidence that a separate Linux build has J293-specific configuration. Its kernel, DTB, modules, and firmware must not be mixed with HarmonyMac's pinned 7.2.11 baseline. Fedora files labeled `harmony` are excluded from this comparison.
+
+Do not label J293 supported or change native boot defaults based on these references. Keep J514S as the known-good profile until a matching J293 kernel/initramfs set has been built and the qualification steps below pass on the machine.
+
 ## Proposed phases
 
 1. **Collect a second-device hardware package.** Record the exact Mac model identifier, SoC generation, board/platform identifier if available, boot chain and firmware versions, kernel baseline/commit, and the intended HarmonyOS image/build. Gather the device tree (including overlays if relevant), kernel `.config`, matching modules and firmware inventory, and redacted boot logs. Keep serial numbers, account data, private paths, and other personal identifiers out of shared artifacts.
@@ -15,15 +35,14 @@ The goal of the first phase is not to claim broad support, but to add a second, 
 5. **Validate in increasing risk order.** First run static configuration and artifact checks; then boot to read-only rescue and confirm device discovery/root identity; next verify the display and input path; then start the original HarmonyOS init and core services; finally test persistence, peripherals, repeated cold boots, and stability. Keep virtual results separate from native results.
 6. **Document support as a per-device matrix.** For every feature, record status as not tested, tested in VM, tested on hardware, or accepted, with the exact source commit, image, kernel, and evidence. Do not label a model supported based only on booting or reaching the desktop.
 
-## First target inputs
+## Next J293 qualification inputs
 
-For the second model, the most useful initial handoff is:
+The initial identity and DTS evidence are available. The next missing inputs are:
 
-- Exact model identifier and chip/board identity, plus the macOS and boot-firmware versions used for the test.
-- Device tree and any overlays corresponding to the intended boot environment.
-- Kernel source commit, `.config`, build release string, and matching modules/firmware list.
-- A sanitized boot log from a known-good operating system, if available, and logs from any Aurora boot attempt.
-- What you can already confirm: boot path, root-disk type/connection, internal display behavior, keyboard/trackpad, and whether the target is virtual or native.
-- Exact HarmonyOS image/build and its existing device configuration, if it differs from the J514S image.
+- macOS and boot-firmware versions, plus the intended HarmonyOS image/build.
+- The kernel source commit, config, release string, modules, and firmware intended for the HarmonyMac J293 build.
+- A sanitized boot log from a known-good operating system and any Aurora attempt.
+- Observed boot path, root-disk connection, display, keyboard/trackpad, and peripheral behavior on this machine.
+- Any device configuration required by the HarmonyOS image that differs from J514S.
 
-Do not send disk images, private keys, account credentials, or unredacted logs unless they are specifically needed and safe to share. Start with the device tree and the identifiers/version details above; we can then determine which additional artifacts are actually necessary.
+Do not send disk images, private keys, account credentials, or unredacted logs unless they are specifically needed and safe to share. Once the missing details are available, use them to identify which additional artifacts are necessary before attempting a J293 build.
